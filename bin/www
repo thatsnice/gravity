@@ -1,0 +1,43 @@
+#!/usr/bin/env coffee
+
+app   = require '../app'
+http  = require 'http'
+
+debug = require('debug')('game:server')
+
+normalizePort = (val) ->
+  port = parseInt val, 10
+
+  switch
+    when isNaN port then val  # named pipe
+    when port >= 0  then port # port number
+    else false
+
+PORT = normalizePort process.env.PORT or '3000'
+bind = if typeof PORT is 'string' then 'Pipe ' + PORT else 'Port ' + PORT
+
+abort = (msg) ->
+  console.error bind + ' ' + msg
+  process.exit 1
+
+
+onError = (error) ->
+  if error.syscall isnt 'listen'
+    throw error
+
+  switch error.code
+    when 'EACCES'     then abort 'requires elevated privileges'
+    when 'EADDRINUSE' then abort 'is already in use'
+    else throw error
+
+onListening = ->
+  addr = server.address()
+  debug 'Listening on ' + bind.toLowerCase()
+
+app.set 'port', PORT
+
+server = http.createServer app
+
+server.listen PORT
+server.on 'error',     onError
+server.on 'listening', onListening
